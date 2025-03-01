@@ -1,0 +1,100 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,} from "https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js";
+import { getFirestore, setDoc, doc } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
+
+// Your web app's Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyCozlMcUAW_xd0XOpDQtFjp-SwORZLMRcI",
+  authDomain: "web-authentication-39260.firebaseapp.com",
+  projectId: "web-authentication-39260",
+  storageBucket: "web-authentication-39260.firebasestorage.app",
+  messagingSenderId: "543723301135",
+  appId: "1:543723301135:web:d35f8ca804cf2ef089767a"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+function showMessage(message, divId){
+  var messageDiv = document.getElementById(divId);
+  messageDiv.style.display = 'block';
+  messageDiv.innerHTML = message;
+  messageDiv.style.opacity = 1;
+  setTimeout(function(){
+    messageDiv.style.opacity = 0;
+  }, 5000);
+}
+
+const signup = document.getElementById('signup');
+signup.addEventListener('click', (event)=>{
+  event.preventDefault();
+
+  //inputs
+  const email = document.getElementById('remail').value;
+  const password = document.getElementById('rpassword').value;
+  const firstName = document.getElementById('first_name').value;
+  const middleName = document.getElementById('middle_name').value;
+  const lastName = document.getElementById('last_name').value;
+
+  createUserWithEmailAndPassword(auth, email, password)
+    .then((userCredential) => {
+      // Signed up 
+      const user = userCredential.user;
+      const userData = {
+        email: email,
+        firstName: firstName,
+        middleName: middleName,
+        lastName: lastName
+      };
+      showMessage('User signed up successfully', 'signUpMessage');
+      const docRef = doc(db, "users", user.uid);
+      setDoc(docRef, userData)
+        .then(()=>{
+          window.location.href = 'login_sign_up.php';
+        })
+        .catch((error)=>{
+          console.error('Error saving user data: ', error);
+        });
+    })
+    .catch((error) => {
+      const errorCode = error.code;
+      if (errorCode == 'auth/email-already-in-use') {
+        showMessage('Email already exists!!!', 'signUpMessage');
+        return;
+      }
+       else{
+        showMessage('Error signing up user', 'loginMessage');
+       }
+    })
+})
+
+const login = document.getElementById('login');
+login.addEventListener('click', (event)=>{
+  event.preventDefault();
+
+  //inputs
+  const email = document.getElementById('lemail').value;
+  const password = document.getElementById('lpassword').value;
+
+  signInWithEmailAndPassword(auth, email, password)
+    .then((userCredential) => {
+      // Signed in 
+      const user = userCredential.user;
+      showMessage('User logged in successfully', 'loginMessage');
+      window.location.href = 'dashboard.php';
+    })    
+    .catch((error) => {
+      const errorCode = error.code;
+      if (errorCode == 'auth/user-not-found') {
+        showMessage('User not found!!!', 'loginMessage');
+        return;
+      }
+      if (errorCode == 'auth/wrong-password') {
+        showMessage('Wrong password!!!', 'loginMessage');
+        return;
+      }
+      showMessage('Error signing in user', 'loginMessage'); 
+    })
+})
