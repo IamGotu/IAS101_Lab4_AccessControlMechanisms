@@ -19,6 +19,10 @@
                 <input type="email" class="email ele" id="lemail" placeholder="Youremail@email.com">
                 <input type="password" class="password ele" id="lpassword" placeholder="Password">
                 <button class="clkbtn" id="login">Login</button>
+                <!-- Google Login Button -->
+                <button class="clkbtn" id="google">
+                    <img src="https://www.vectorlogo.zone/logos/google/google-ar21.svg" alt="Google Logo" width="75" height="65">
+                </button>
                 <div id="loginMessage" class="messageDiv"></div>
             </div>
             <div class="signup-box">

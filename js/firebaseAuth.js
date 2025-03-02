@@ -1,5 +1,11 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,} from "https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js";
+import { 
+  getAuth, 
+  createUserWithEmailAndPassword, 
+  signInWithEmailAndPassword, 
+  GoogleAuthProvider, 
+  signInWithPopup // Add this for Google Sign-In
+} from "https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js";
 import { getFirestore, setDoc, doc } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
 
 // Your web app's Firebase configuration
@@ -17,21 +23,26 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-function showMessage(message, divId){
+// Google Sign-In Provider
+const googleProvider = new GoogleAuthProvider();
+
+// Function to show messages
+function showMessage(message, divId) {
   var messageDiv = document.getElementById(divId);
   messageDiv.style.display = 'block';
   messageDiv.innerHTML = message;
   messageDiv.style.opacity = 1;
-  setTimeout(function(){
+  setTimeout(function () {
     messageDiv.style.opacity = 0;
   }, 5000);
 }
 
+// Sign-Up with Email and Password
 const signup = document.getElementById('signup');
-signup.addEventListener('click', (event)=>{
+signup.addEventListener('click', (event) => {
   event.preventDefault();
 
-  //inputs
+  // Inputs
   const email = document.getElementById('remail').value;
   const password = document.getElementById('rpassword').value;
   const firstName = document.getElementById('first_name').value;
@@ -51,10 +62,10 @@ signup.addEventListener('click', (event)=>{
       showMessage('User signed up successfully', 'signUpMessage');
       const docRef = doc(db, "users", user.uid);
       setDoc(docRef, userData)
-        .then(()=>{
+        .then(() => {
           window.location.href = 'login_sign_up.php';
         })
-        .catch((error)=>{
+        .catch((error) => {
           console.error('Error saving user data: ', error);
         });
     })
@@ -63,18 +74,18 @@ signup.addEventListener('click', (event)=>{
       if (errorCode == 'auth/email-already-in-use') {
         showMessage('Email already exists!!!', 'signUpMessage');
         return;
+      } else {
+        showMessage('Error signing up user', 'signUpMessage');
       }
-       else{
-        showMessage('Error signing up user', 'loginMessage');
-       }
-    })
-})
+    });
+});
 
+// Login with Email and Password
 const login = document.getElementById('login');
-login.addEventListener('click', (event)=>{
+login.addEventListener('click', (event) => {
   event.preventDefault();
 
-  //inputs
+  // Inputs
   const email = document.getElementById('lemail').value;
   const password = document.getElementById('lpassword').value;
 
@@ -84,7 +95,7 @@ login.addEventListener('click', (event)=>{
       const user = userCredential.user;
       showMessage('User logged in successfully', 'loginMessage');
       window.location.href = 'dashboard.php';
-    })    
+    })
     .catch((error) => {
       const errorCode = error.code;
       if (errorCode == 'auth/user-not-found') {
@@ -95,6 +106,55 @@ login.addEventListener('click', (event)=>{
         showMessage('Wrong password!!!', 'loginMessage');
         return;
       }
-      showMessage('Error signing in user', 'loginMessage'); 
+      showMessage('Error signing in user', 'loginMessage');
+    });
+});
+
+// Google Sign-In
+const googleLoginButton = document.getElementById('google');
+googleLoginButton.addEventListener('click', (event) => {
+  event.preventDefault();
+
+  signInWithPopup(auth, googleProvider)
+    .then((result) => {
+      // This gives you a Google Access Token. You can use it to access Google APIs.
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      const token = credential.accessToken;
+
+      // The signed-in user info.
+      const user = result.user;
+      showMessage('User signed in with Google successfully', 'loginMessage');
+
+      // Extract first name and last name from displayName
+      const displayName = user.displayName || ''; // Fallback to empty string if displayName is null
+      const nameParts = displayName.split(' '); // Split the full name into parts
+
+      // Assign first name and last name
+      const firstName = nameParts.slice(0, -1).join(' ') || 'N/A'; // Everything except the last part is the first name
+      const lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : 'N/A'; // Last part is the last name
+
+      // Save user data to Firestore
+      const userData = {
+        email: user.email || 'N/A', // Fallback to 'N/A' if email is undefined
+        firstName: firstName,
+        middleName: 'N/A', // Middle name is not provided by Google
+        lastName: lastName,
+      };
+
+      const docRef = doc(db, "users", user.uid);
+      setDoc(docRef, userData)
+        .then(() => {
+          console.log('User data saved to Firestore');
+          window.location.href = 'dashboard.php';
+        })
+        .catch((error) => {
+          console.error('Error saving user data: ', error);
+        });
     })
-})
+    .catch((error) => {
+      // Handle Errors here.
+      const errorCode = error.code;
+      const errorMessage = error.message;
+      showMessage(`Error during Google Sign-In: ${errorMessage}`, 'loginMessage');
+    });
+});
