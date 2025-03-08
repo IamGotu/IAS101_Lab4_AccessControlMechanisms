@@ -2,8 +2,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/11.4.0/firebas
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js";
 import { getFirestore, getDoc, doc } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
 
-
-
 // Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyCozlMcUAW_xd0XOpDQtFjp-SwORZLMRcI",
@@ -25,8 +23,12 @@ onAuthStateChanged(auth, (user) => {
     // User is not logged in, redirect to login page
     console.log("User is not logged in. Redirecting to login page...");
     window.location.href = "login_sign_up.php";
+  } else if (!user.emailVerified) {
+    // User is logged in but email is not verified, redirect to login page
+    console.log("User email is not verified. Redirecting to login page...");
+    window.location.href = "login_sign_up.php";
   } else {
-    // User is logged in, fetch user data
+    // User is logged in and email is verified, fetch user data
     const loggedInUserId = user.uid; // Use the authenticated user's UID
     console.log('Logged In User ID:', loggedInUserId);
 

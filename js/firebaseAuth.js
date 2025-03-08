@@ -4,11 +4,12 @@ import {
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword, 
   GoogleAuthProvider, 
-  signInWithPopup // Add this for Google Sign-In
+  signInWithPopup,
+  sendEmailVerification
 } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js";
 import { getFirestore, setDoc, doc } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
 
-// Your web app's Firebase configuration
+// Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyCozlMcUAW_xd0XOpDQtFjp-SwORZLMRcI",
   authDomain: "web-authentication-39260.firebaseapp.com",
@@ -60,6 +61,13 @@ signup.addEventListener('click', (event) => {
         lastName: lastName
       };
       showMessage('User signed up successfully', 'signUpMessage');
+
+      // Send verification email
+      sendEmailVerification(user)
+        .then(() => {
+          showMessage('Verification email sent. Please check your email.', 'signUpMessage');
+        });
+
       const docRef = doc(db, "users", user.uid);
       setDoc(docRef, userData)
         .then(() => {
@@ -93,8 +101,13 @@ login.addEventListener('click', (event) => {
     .then((userCredential) => {
       // Signed in 
       const user = userCredential.user;
-      showMessage('User logged in successfully', 'loginMessage');
-      window.location.href = 'dashboard.php';
+      if (user.emailVerified) {
+        showMessage('User logged in successfully', 'loginMessage');
+        window.location.href = 'dashboard.php';
+      } else {
+        showMessage('Please verify your email address before logging in.', 'loginMessage');
+        signOut(auth); // Sign out the user if email is not verified
+      }
     })
     .catch((error) => {
       const errorCode = error.code;
