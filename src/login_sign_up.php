@@ -16,7 +16,7 @@
         </div>
         <div class="form-section">
             <div class="login-box">
-                <input type="email" class="email ele" id="lemail" placeholder="Youremail@email.com">
+                <input type="email" class="email ele" id="lemail" placeholder="Email">
                 <input type="password" class="password ele" id="lpassword" placeholder="Password">
                 <button class="clkbtn" id="login">Login</button>
                 <!-- Google Login Button -->
@@ -29,7 +29,7 @@
                 <input type="text" class="name ele" id="first_name" placeholder="First Name">
                 <input type="text" class="name ele" id="middle_name" placeholder="Middle Name">
                 <input type="text" class="name ele" id="last_name" placeholder="Last Name">
-                <input type="email" class="email ele" id="remail" placeholder="Youremail@email.com">
+                <input type="email" class="email ele" id="remail" placeholder="Email">
                 <input type="password" class="password ele" id="rpassword" placeholder="Password">
                 <button class="clkbtn" id="signup">Signup</button>
                 <div id="signUpMessage" class="messageDiv"></div>
