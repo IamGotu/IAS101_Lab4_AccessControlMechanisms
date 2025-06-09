@@ -1,14 +1,3 @@
-<?php
-session_start();
-
-if (!isset($_SESSION['userRole']) || 
-   ($_SESSION['userRole'] !== 'Admin' && $_SESSION['userRole'] !== 'Super Admin')) {
-    // Unauthorized access - redirect to dashboard or login
-    header('Location: dashboard.php');
-    exit;
-}
-?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>

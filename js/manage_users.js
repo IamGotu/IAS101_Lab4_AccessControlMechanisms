@@ -34,6 +34,14 @@ onAuthStateChanged(auth, async (user) => {
     const userDoc = await getDoc(doc(db, "users", user.uid));
     if (userDoc.exists()) {
       const data = userDoc.data();
+      
+      // ROLE-BASED ACCESS CONTROL (Client-Side)
+      if (data.role !== "Admin" && data.role !== "Super Admin") {
+        alert("Access denied. You do not have permission to access this page.");
+        window.location.href = "dashboard.php"; // redirect unauthorized users
+        return;
+      }
+
       document.getElementById("loggedUserFullName").textContent = `${data.firstName} ${data.middleName} ${data.lastName}`;
       document.getElementById("loggedUserEmail").textContent = user.email;
       document.getElementById("loggedUserRole").textContent = data.role;

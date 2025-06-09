@@ -7,8 +7,8 @@
   <script type="module">
     
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
-    import { getFirestore, setDoc, doc } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
-    import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js";
+    import { getFirestore, setDoc, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
+    import { getAuth, createUserWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCozlMcUAW_xd0XOpDQtFjp-SwORZLMRcI",
@@ -22,6 +22,33 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     const auth = getAuth(app);
+
+    // Ensure user is logged in and has the correct role
+    onAuthStateChanged(auth, async (user) => {
+        if (!user || !user.emailVerified) {
+            alert("You must be logged in with a verified email to access this page.");
+            window.location.href = "login_sign_up.php";
+            return;
+        }
+
+        try {
+            const userDoc = await getDoc(doc(db, "users", user.uid));
+            if (userDoc.exists()) {
+            const data = userDoc.data();
+            if (data.role !== "Admin" && data.role !== "Super Admin") {
+                alert("Access denied. Only Admin or Super Admin can create users.");
+                window.location.href = "dashboard.php";
+            }
+            } else {
+            alert("User data not found.");
+            window.location.href = "dashboard.php";
+            }
+        } catch (err) {
+            console.error("Error checking role:", err);
+            alert("Access check failed.");
+            window.location.href = "dashboard.php";
+        }
+    });
 
     document.addEventListener('DOMContentLoaded', () => {
       const form = document.getElementById('addUserForm');
