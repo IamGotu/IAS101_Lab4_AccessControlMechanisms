@@ -1,0 +1,60 @@
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    display: flex;
+    background: linear-gradient(to right, #e2e2e2, #c9d6ff);
+}
+
+.main-content {
+    margin-left: 240px;
+    padding: 30px;
+    width: calc(100% - 240px);
+}
+
+h1 {
+    text-align: center;
+}
+
+div {
+    font-weight: 400;
+    font-size: 22px;
+    color: black;
+    margin-top: 10px;
+}
+
+span {
+    font-weight: 600;
+    color: darkblue;
+}
+
+.user-card {
+    background-color: #f8f9fa;
+    border: 1px solid #ccc;
+    margin-bottom: 20px;
+    padding: 15px;
+    border-radius: 8px;
+}
+
+.user-card form {
+    font-size: 18px;
+}
+
+.user-card input, .user-card select {
+    width: 70%;
+    padding: 8px;
+    margin: 5px 0;
+    font-size: 16px;
+}
+
+.user-card button {
+    background-color: #2980b9;
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.user-card button:hover {
+    background-color: #1f618d;
+}
