@@ -1,40 +1,34 @@
-body{
-    padding:30px;
-    background-color: linear-gradient(to right, #e2e2e2, #c9d6ff);
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    display: flex;
+    background: linear-gradient(to right, #e2e2e2, #c9d6ff);
 }
 
-h1{
-    text-align:center;
+.main-content {
+    margin-left: 240px;
+    padding: 30px;
+    width: calc(100% - 240px);
 }
 
-button{
-    color:blueviolet;
-    background-color: #c9d6ff;
-    padding: 5px;
-    border-radius: 5px;
-    font-size:1rem;
-    font-weight:bold;
-    border:none;
+h1 {
+    text-align: center;
 }
 
-button:hover{
-    text-decoration: underline;
-    color: blue;
-}
-
-button, div{
-    margin-left:15%;
-    font-size:20px;
-    padding:10px;
-}
-
-div{
+div {
     font-weight: 400;
     font-size: 22px;
     color: black;
+    margin-top: 10px;
 }
 
-span{
+span {
     font-weight: 600;
-    color: rgb(red, green, blue);
+    color: darkblue;
+}
+
+#loading {
+    font-size: 1.2em;
+    font-weight: bold;
+    color: #555;
 }

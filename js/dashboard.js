@@ -17,40 +17,23 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// Check authentication state on page load
-onAuthStateChanged(auth, (user) => {
-  if (!user) {
-    // User is not logged in, redirect to login page
-    console.log("User is not logged in. Redirecting to login page...");
-    window.location.href = "login_sign_up.php";
-  } else if (!user.emailVerified) {
-    // User is logged in but email is not verified, redirect to login page
-    console.log("User email is not verified. Redirecting to login page...");
-    window.location.href = "login_sign_up.php";
-  } else {
-    // User is logged in and email is verified, fetch user data
-    const loggedInUserId = user.uid; // Use the authenticated user's UID
-    console.log('Logged In User ID:', loggedInUserId);
+onAuthStateChanged(auth, async (user) => {
+    if (user) {
+        const uid = user.uid;
+        const docRef = doc(db, "users", uid);
+        const docSnap = await getDoc(docRef);
 
-    // Fetch user data from Firestore (if needed)
-    const docRef = doc(db, "users", loggedInUserId);
-    getDoc(docRef)
-      .then((docSnap) => {
         if (docSnap.exists()) {
-          console.log('Document Data:', docSnap.data());
-          const userData = docSnap.data();
-          document.getElementById('loggedUserFirstName').innerText = userData.firstName;
-          document.getElementById('loggedUserMiddleName').innerText = userData.middleName;
-          document.getElementById('loggedUserLastName').innerText = userData.lastName;
-          document.getElementById('loggedUserEmail').innerText = userData.email;
+            const userData = docSnap.data();
+            document.getElementById("loggedUserFullName").textContent = `${userData.firstName} ${userData.middleName} ${userData.lastName}`;
+            document.getElementById("loggedUserEmail").textContent = user.email;
+            document.getElementById("loggedUserRole").textContent = userData.role;
         } else {
-          console.log("No such document found matching id!");
+            console.error("No such user document!");
         }
-      })
-      .catch((error) => {
-        console.log("Error getting document:", error);
-      });
-  }
+    } else {
+        window.location.href = "../src/login_sign_up.php"; // Redirect if not logged in
+    }
 });
 
 // Logout functionality
