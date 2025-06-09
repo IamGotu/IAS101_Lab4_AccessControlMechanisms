@@ -58,7 +58,8 @@ signup.addEventListener('click', (event) => {
         email: email,
         firstName: firstName,
         middleName: middleName,
-        lastName: lastName
+        lastName: lastName,
+        role: 'User'
       };
       showMessage('User signed up successfully', 'signUpMessage');
 
