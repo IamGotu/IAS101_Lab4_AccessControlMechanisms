@@ -1,9 +1,10 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
 import {
-  getFirestore, collection, getDocs, doc, getDoc, updateDoc
+  getFirestore, collection, getDocs, doc, getDoc, updateDoc, deleteDoc
 } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
+
 import {
-  getAuth, onAuthStateChanged
+  getAuth, onAuthStateChanged, signOut
 } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js";
 
 // Firebase configuration
@@ -42,6 +43,7 @@ onAuthStateChanged(auth, async (user) => {
   } catch (err) {
     console.error("Error fetching user profile:", err);
   }
+  
 
   // Load all users for management
   const userListDiv = document.getElementById("userList");
@@ -50,50 +52,112 @@ onAuthStateChanged(auth, async (user) => {
 
     const usersSnapshot = await getDocs(collection(db, "users"));
     usersSnapshot.forEach((docSnap) => {
-      const data = docSnap.data();
-      const uid = docSnap.id;
+    const data = docSnap.data();
+    const uid = docSnap.id;
 
-      const userCard = document.createElement("div");
-      userCard.classList.add("user-card");
-      userCard.innerHTML = `
+    const userCard = document.createElement("div");
+    userCard.classList.add("user-card");
+    userCard.innerHTML = `
         <form data-uid="${uid}">
-          <label>First Name: <input type="text" name="firstName" value="${data.firstName}" /></label><br>
-          <label>Middle Name: <input type="text" name="middleName" value="${data.middleName}" /></label><br>
-          <label>Last Name: <input type="text" name="lastName" value="${data.lastName}" /></label><br>
-          <label>Email: <input type="email" value="${data.email}" disabled /></label><br>
-          <label>Role:
+        <label>First Name: <input type="text" name="firstName" value="${data.firstName}" /></label><br>
+        <label>Middle Name: <input type="text" name="middleName" value="${data.middleName}" /></label><br>
+        <label>Last Name: <input type="text" name="lastName" value="${data.lastName}" /></label><br>
+        <label>Email: <input type="email" value="${data.email}" disabled /></label><br>
+        <label>Role:
             <select name="role">
-              <option value="Super Admin" ${data.role === 'Super Admin' ? 'selected' : ''}>Super Admin</option>
-              <option value="Admin" ${data.role === 'Admin' ? 'selected' : ''}>Admin</option>
-              <option value="User" ${data.role === 'User' ? 'selected' : ''}>User</option>
+            <option value="Super Admin" ${data.role === 'Super Admin' ? 'selected' : ''}>Super Admin</option>
+            <option value="Admin" ${data.role === 'Admin' ? 'selected' : ''}>Admin</option>
+            <option value="User" ${data.role === 'User' ? 'selected' : ''}>User</option>
             </select>
-          </label><br>
-          <button type="submit">Update</button>
+        </label><br>
+        <button type="button" class="disable-btn">Disable</button>
+        <button type="button" class="delete-btn">Delete</button>
+        <button type="submit">Update</button>
         </form>
         <hr>
-      `;
-      userListDiv.appendChild(userCard);
+    `;
+    userListDiv.appendChild(userCard);
 
-      // Form submit handler
-      const form = userCard.querySelector("form");
-      form.addEventListener("submit", async (e) => {
+    const form = userCard.querySelector("form");
+
+    // ✅ Disable account
+    userCard.querySelector(".disable-btn").addEventListener("click", async () => {
+        try {
+        await updateDoc(doc(db, "users", uid), { disabled: true });
+        alert("User disabled.");
+        } catch (err) {
+        console.error("Disable failed:", err);
+        alert("Error disabling user.");
+        }
+    });
+
+    // ✅ Delete account
+    userCard.querySelector(".delete-btn").addEventListener("click", async () => {
+        if (!confirm("Are you sure you want to delete this user?")) return;
+        try {
+        await deleteDoc(doc(db, "users", uid));
+        alert("User deleted.");
+        window.location.reload();
+        } catch (err) {
+        console.error("Delete failed:", err);
+        alert("Error deleting user.");
+        }
+    });
+
+    // ✅ Update user data
+    form.addEventListener("submit", async (e) => {
         e.preventDefault();
 
         const updatedData = {
-          firstName: form.firstName.value,
-          middleName: form.middleName.value,
-          lastName: form.lastName.value,
-          role: form.role.value
+        firstName: form.firstName.value,
+        middleName: form.middleName.value,
+        lastName: form.lastName.value,
+        role: form.role.value
         };
 
         try {
-          await updateDoc(doc(db, "users", uid), updatedData);
-          alert("User updated successfully!");
+        await updateDoc(doc(db, "users", uid), updatedData);
+        alert("User updated successfully!");
         } catch (err) {
-          console.error("Error updating user:", err);
-          alert("Failed to update user.");
+        console.error("Error updating user:", err);
+        alert("Failed to update user.");
         }
-      });
     });
+    });
+  }
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  // Add User button listener
+  const addUserBtn = document.getElementById('addUserBtn');
+  if (addUserBtn) {
+    addUserBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      window.location.href = 'add_user.php';
+    });
+  } else {
+    console.error('Add User button not found!');
+  }
+
+
+// Logout functionality
+  const logout = document.getElementById('logout');
+
+  if (logout) {
+    logout.addEventListener('click', (event) => {
+      event.preventDefault(); // Prevent default link behavior
+      console.log('Logout button clicked');
+  
+      signOut(auth)
+        .then(() => {
+          clearToken(); // Clear the token
+          window.location.href = 'login_sign_up.php?nocache=' + new Date().getTime(); // Redirect to login page
+        })
+        .catch((error) => {
+          console.error('Error signing out:', error);
+        });
+    });
+  } else {
+    console.error('Logout button not found!');
   }
 });
