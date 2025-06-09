@@ -18,26 +18,38 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 onAuthStateChanged(auth, async (user) => {
-    if (user) {
-        const uid = user.uid;
-        const docRef = doc(db, "users", uid);
-        const docSnap = await getDoc(docRef);
+  if (user) {
+    const uid = user.uid;
+    const docRef = doc(db, "users", uid);
+    const docSnap = await getDoc(docRef);
 
-        if (docSnap.exists()) {
-            const userData = docSnap.data();
-            document.getElementById("loggedUserFullName").textContent = `${userData.firstName} ${userData.middleName} ${userData.lastName}`;
-            document.getElementById("loggedUserEmail").textContent = user.email;
-            document.getElementById("loggedUserRole").textContent = userData.role;
-        } else {
-            console.error("No such user document!");
-        }
+    if (docSnap.exists()) {
+      const userData = docSnap.data();
+
+      // Update UI
+      document.getElementById("loggedUserFullName").textContent = `${userData.firstName} ${userData.middleName} ${userData.lastName}`;
+      document.getElementById("loggedUserEmail").textContent = user.email;
+      document.getElementById("loggedUserRole").textContent = userData.role;
+
+      // Set role in localStorage for role-based UI control
+      localStorage.setItem('role', userData.role);
+
+      // Optionally, check Manage Users link visibility here too
+      const manageUsersLink = document.querySelector('a[href="../src/manage_users.php"]');
+      if (userData.role !== 'Admin' && userData.role !== 'Super Admin') {
+        manageUsersLink.style.display = 'none';
+      }
+
     } else {
-        window.location.href = "../src/login_sign_up.php"; // Redirect if not logged in
+      console.error("No such user document!");
     }
+  } else {
+    window.location.href = "../src/login_sign_up.php"; // Redirect if not logged in
+  }
 });
 
-// Logout functionality
 document.addEventListener('DOMContentLoaded', () => {
+  // Logout functionality
   const logout = document.getElementById('logout');
 
   if (logout) {
