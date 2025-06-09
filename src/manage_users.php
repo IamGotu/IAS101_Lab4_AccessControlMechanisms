@@ -10,8 +10,13 @@
 <body>
     <?php include '../includes/sidebar.php'; ?>
     <link rel="stylesheet" href="../css/sidebar.css" />
+
     <div class="main-content">
+
         <h1>Manage Users</h1>
+
+        <button id="addUserBtn" class="btn btn-primary">Add User</button>
+
         <div id="userList">Loading users...</div>
     </div>
 </body>

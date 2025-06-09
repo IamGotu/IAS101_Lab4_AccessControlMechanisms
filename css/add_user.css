@@ -1,0 +1,99 @@
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f9fafb;
+  color: #333;
+  margin: 0;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+}
+
+h1 {
+  margin-bottom: 1.5rem;
+  color: #2c3e50;
+  font-weight: 700;
+  font-size: 2rem;
+}
+
+form#addUserForm {
+  background: #ffffff;
+  padding: 2rem 2.5rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.1);
+  width: 100%;
+  max-width: 420px;
+  box-sizing: border-box;
+}
+
+form#addUserForm label {
+  display: block;
+  margin-bottom: 1rem;
+  font-weight: 600;
+  color: #34495e;
+}
+
+form#addUserForm input[type="text"],
+form#addUserForm input[type="email"],
+form#addUserForm input[type="password"],
+form#addUserForm select {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  margin-top: 0.3rem;
+  border: 1.5px solid #bdc3c7;
+  border-radius: 5px;
+  font-size: 1rem;
+  transition: border-color 0.2s ease-in-out;
+}
+
+form#addUserForm input[type="text"]:focus,
+form#addUserForm input[type="email"]:focus,
+form#addUserForm input[type="password"]:focus,
+form#addUserForm select:focus {
+  border-color: #3498db;
+  outline: none;
+  box-shadow: 0 0 6px rgba(52, 152, 219, 0.4);
+}
+
+form#addUserForm button[type="submit"] {
+  width: 100%;
+  background-color: #2980b9;
+  color: #fff;
+  font-weight: 700;
+  font-size: 1.1rem;
+  padding: 0.75rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.25s ease-in-out;
+  margin-top: 1rem;
+}
+
+form#addUserForm button[type="submit"]:hover {
+  background-color: #1c5980;
+}
+
+p a {
+  display: inline-block;
+  margin-top: 1.5rem;
+  text-decoration: none;
+  color: #2980b9;
+  font-weight: 600;
+  transition: color 0.2s ease-in-out;
+}
+
+p a:hover {
+  color: #1c5980;
+}
+
+/* Responsive adjustments */
+@media (max-width: 480px) {
+  body {
+    padding: 1rem;
+  }
+
+  form#addUserForm {
+    padding: 1.5rem 1.5rem;
+  }
+}
