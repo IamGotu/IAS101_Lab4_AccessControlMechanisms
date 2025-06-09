@@ -1,60 +1,105 @@
+/* manage_users.css */
+
 body {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    display: flex;
-    background: linear-gradient(to right, #e2e2e2, #c9d6ff);
+  margin: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(to right, #e2e2e2, #c9d6ff);
+  display: flex;
+  min-height: 100vh;
 }
 
 .main-content {
-    margin-left: 240px;
-    padding: 30px;
-    width: calc(100% - 240px);
+  margin-left: 240px;
+  padding: 2rem;
+  width: calc(100% - 240px);
+  box-sizing: border-box;
 }
 
 h1 {
-    text-align: center;
-}
-
-div {
-    font-weight: 400;
-    font-size: 22px;
-    color: black;
-    margin-top: 10px;
-}
-
-span {
-    font-weight: 600;
-    color: darkblue;
+  text-align: center;
+  font-size: 2rem;
+  color: #2c3e50;
+  margin-bottom: 2rem;
 }
 
 .user-card {
-    background-color: #f8f9fa;
-    border: 1px solid #ccc;
-    margin-bottom: 20px;
-    padding: 15px;
-    border-radius: 8px;
+  background-color: #ffffff;
+  border: 1px solid #dfe6e9;
+  margin-bottom: 1.5rem;
+  padding: 1.5rem 2rem;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 .user-card form {
-    font-size: 18px;
+  font-size: 1rem;
 }
 
-.user-card input, .user-card select {
-    width: 70%;
-    padding: 8px;
-    margin: 5px 0;
-    font-size: 16px;
+.user-card label {
+  font-weight: 600;
+  color: #2d3436;
+  display: block;
+  margin-top: 1rem;
+}
+
+.user-card input,
+.user-card select {
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  margin-top: 0.5rem;
+  border: 1px solid #b2bec3;
+  border-radius: 6px;
+  font-size: 1rem;
+  transition: border 0.3s ease;
+}
+
+.user-card input:focus,
+.user-card select:focus {
+  border-color: #2980b9;
+  outline: none;
+  box-shadow: 0 0 5px rgba(41, 128, 185, 0.3);
 }
 
 .user-card button {
-    background-color: #2980b9;
-    color: white;
-    padding: 10px 15px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
+  background-color: #2980b9;
+  color: #fff;
+  font-weight: 600;
+  font-size: 1rem;
+  padding: 0.6rem 1.2rem;
+  border: none;
+  border-radius: 6px;
+  margin-top: 1rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease-in-out;
 }
 
 .user-card button:hover {
-    background-color: #1f618d;
+  background-color: #1f618d;
+}
+
+span {
+  font-weight: 600;
+  color: #2c3e50;
+  display: inline-block;
+  margin-bottom: 0.5rem;
+}
+
+div {
+  font-weight: 400;
+  font-size: 1rem;
+  color: #333;
+  margin-top: 10px;
+}
+
+/* Optional: Responsive Design */
+@media (max-width: 768px) {
+  .main-content {
+    margin-left: 0;
+    width: 100%;
+    padding: 1.5rem;
+  }
+
+  .user-card {
+    padding: 1rem 1.5rem;
+  }
 }
