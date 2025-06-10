@@ -1,66 +1,69 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
-import { 
-  getAuth, 
-  createUserWithEmailAndPassword, 
-  signInWithEmailAndPassword, 
-  GoogleAuthProvider, 
+import {
+  getAuth,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  GoogleAuthProvider,
   signInWithPopup,
-  sendEmailVerification
+  sendEmailVerification,
+  signOut
 } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js";
-import { getFirestore, setDoc, doc } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
+import {
+  getFirestore,
+  setDoc,
+  doc,
+  getDoc
+} from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
 
-// Firebase configuration
+// Firebase Config
 const firebaseConfig = {
   apiKey: "AIzaSyCozlMcUAW_xd0XOpDQtFjp-SwORZLMRcI",
   authDomain: "web-authentication-39260.firebaseapp.com",
   projectId: "web-authentication-39260",
-  storageBucket: "web-authentication-39260.firebasestorage.app",
+  storageBucket: "web-authentication-39260.appspot.com",
   messagingSenderId: "543723301135",
   appId: "1:543723301135:web:d35f8ca804cf2ef089767a"
 };
 
-// Initialize Firebase
+// Init
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-
-// Google Sign-In Provider
 const googleProvider = new GoogleAuthProvider();
 
-// Function to show messages
-function showMessage(message, divId) {
-  var messageDiv = document.getElementById(divId);
-  messageDiv.style.display = 'block';
-  messageDiv.innerHTML = message;
-  messageDiv.style.opacity = 1;
-  setTimeout(function () {
-    messageDiv.style.opacity = 0;
-  }, 5000);
+// Utility: Display Message
+function showMessage(msg, divId) {
+  const msgDiv = document.getElementById(divId);
+  msgDiv.style.display = 'block';
+  msgDiv.innerHTML = msg;
+  msgDiv.style.opacity = 1;
+  setTimeout(() => { msgDiv.style.opacity = 0; }, 5000);
 }
 
-// Sign-Up with Email and Password
-const signup = document.getElementById('signup');
-signup.addEventListener('click', (event) => {
-  event.preventDefault();
+// Sign-Up
+document.getElementById('signup')?.addEventListener('click', async (e) => {
+  e.preventDefault();
 
-  // Inputs
   const email = document.getElementById('remail').value;
   const password = document.getElementById('rpassword').value;
   const firstName = document.getElementById('first_name').value;
   const middleName = document.getElementById('middle_name').value;
   const lastName = document.getElementById('last_name').value;
 
-createUserWithEmailAndPassword(auth, email, password)
-  .then((userCredential) => {
+  try {
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
 
-    // Updated user data structure
+    await sendEmailVerification(user);
+    showMessage("Verification email sent. Please check your email.", 'signUpMessage');
+
     const userData = {
+      email,
+      firstName,
+      middleName,
+      lastName,
       role: 'User',
-      firstName: firstName,
-      middleName: middleName,
-      lastName: lastName,
-      email: email,
+      mfaEnabled: false,
       disabled: false,
       permissions: {
         canAdd: false,
@@ -70,114 +73,93 @@ createUserWithEmailAndPassword(auth, email, password)
       }
     };
 
-    showMessage('User signed up successfully', 'signUpMessage');
+    await setDoc(doc(db, "users", user.uid), userData);
+    showMessage("User signed up successfully.", 'signUpMessage');
+    window.location.href = 'login_sign_up.php';
 
-    // Send verification email
-    sendEmailVerification(user)
-      .then(() => {
-        showMessage('Verification email sent. Please check your email.', 'signUpMessage');
-      });
-
-    // Store user data in Firestore
-    const docRef = doc(db, "users", user.uid);
-    setDoc(docRef, userData)
-      .then(() => {
-        window.location.href = 'login_sign_up.php';
-      })
-      .catch((error) => {
-        console.error('Error saving user data: ', error);
-      });
-  })
-  .catch((error) => {
-    const errorCode = error.code;
-    if (errorCode === 'auth/email-already-in-use') {
-      showMessage('Email already exists!!!', 'signUpMessage');
-    } else {
-      showMessage('Error signing up user', 'signUpMessage');
-    }
-  });
+  } catch (error) {
+    const errorMsg = error.code === 'auth/email-already-in-use' ?
+      'Email already exists!' : 'Error signing up.';
+    showMessage(errorMsg, 'signUpMessage');
+  }
 });
 
-// Login with Email and Password
-const login = document.getElementById('login');
-login.addEventListener('click', (event) => {
-  event.preventDefault();
-
-  // Inputs
+// Login
+document.getElementById('login')?.addEventListener('click', async (e) => {
+  e.preventDefault();
   const email = document.getElementById('lemail').value;
   const password = document.getElementById('lpassword').value;
 
-  signInWithEmailAndPassword(auth, email, password)
-    .then((userCredential) => {
-      // Signed in 
-      const user = userCredential.user;
-      if (user.emailVerified) {
-        showMessage('User logged in successfully', 'loginMessage');
-        window.location.href = 'dashboard.php';
+  try {
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
+
+    if (!user.emailVerified) {
+      showMessage("Please verify your email before logging in.", 'loginMessage');
+      await signOut(auth);
+      return;
+    }
+
+    const docSnap = await getDoc(doc(db, 'users', user.uid));
+    if (!docSnap.exists()) {
+      showMessage("User data not found in Firestore.", 'loginMessage');
+      await signOut(auth);
+      return;
+    }
+
+    const userData = docSnap.data();
+    if (userData.mfaEnabled) {
+      const res = await fetch('send_otp.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ uid: user.uid, email: user.email })
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        localStorage.setItem('mfaUserId', user.uid);
+        window.location.href = 'verify_otp.php';
       } else {
-        showMessage('Please verify your email address before logging in.', 'loginMessage');
-        signOut(auth); // Sign out the user if email is not verified
+        showMessage("Failed to send OTP: " + data.message, 'loginMessage');
+        await signOut(auth);
       }
-    })
-    .catch((error) => {
-      const errorCode = error.code;
-      if (errorCode == 'auth/user-not-found') {
-        showMessage('User not found!!!', 'loginMessage');
-        return;
-      }
-      if (errorCode == 'auth/wrong-password') {
-        showMessage('Wrong password!!!', 'loginMessage');
-        return;
-      }
-      showMessage('Error signing in user', 'loginMessage');
-    });
+    } else {
+      showMessage("Login successful.", 'loginMessage');
+      window.location.href = 'dashboard.php';
+    }
+
+  } catch (error) {
+    const msg = error.code === 'auth/user-not-found' ? "User not found!"
+      : error.code === 'auth/wrong-password' ? "Wrong password!"
+      : "Error signing in.";
+    showMessage(msg, 'loginMessage');
+  }
 });
 
 // Google Sign-In
-const googleLoginButton = document.getElementById('google');
-googleLoginButton.addEventListener('click', (event) => {
-  event.preventDefault();
+document.getElementById('google')?.addEventListener('click', async (e) => {
+  e.preventDefault();
 
-  signInWithPopup(auth, googleProvider)
-    .then((result) => {
-      // This gives you a Google Access Token. You can use it to access Google APIs.
-      const credential = GoogleAuthProvider.credentialFromResult(result);
-      const token = credential.accessToken;
+  try {
+    const result = await signInWithPopup(auth, googleProvider);
+    const user = result.user;
 
-      // The signed-in user info.
-      const user = result.user;
-      showMessage('User signed in with Google successfully', 'loginMessage');
+    const displayName = user.displayName || '';
+    const nameParts = displayName.split(' ');
+    const firstName = nameParts.slice(0, -1).join(' ') || 'N/A';
+    const lastName = nameParts.at(-1) || 'N/A';
 
-      // Extract first name and last name from displayName
-      const displayName = user.displayName || ''; // Fallback to empty string if displayName is null
-      const nameParts = displayName.split(' '); // Split the full name into parts
+    const userData = {
+      email: user.email || 'N/A',
+      firstName,
+      middleName: 'N/A',
+      lastName
+    };
 
-      // Assign first name and last name
-      const firstName = nameParts.slice(0, -1).join(' ') || 'N/A'; // Everything except the last part is the first name
-      const lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : 'N/A'; // Last part is the last name
+    await setDoc(doc(db, "users", user.uid), userData);
+    window.location.href = 'dashboard.php';
 
-      // Save user data to Firestore
-      const userData = {
-        email: user.email || 'N/A', // Fallback to 'N/A' if email is undefined
-        firstName: firstName,
-        middleName: 'N/A', // Middle name is not provided by Google
-        lastName: lastName,
-      };
-
-      const docRef = doc(db, "users", user.uid);
-      setDoc(docRef, userData)
-        .then(() => {
-          console.log('User data saved to Firestore');
-          window.location.href = 'dashboard.php';
-        })
-        .catch((error) => {
-          console.error('Error saving user data: ', error);
-        });
-    })
-    .catch((error) => {
-      // Handle Errors here.
-      const errorCode = error.code;
-      const errorMessage = error.message;
-      showMessage(`Error during Google Sign-In: ${errorMessage}`, 'loginMessage');
-    });
+  } catch (error) {
+    showMessage(`Google Sign-In Error: ${error.message}`, 'loginMessage');
+  }
 });

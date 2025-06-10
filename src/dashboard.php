@@ -17,9 +17,16 @@
 </head>
 <body>
     <?php include '../includes/sidebar.php'; ?>
-    <div id="loading">Loading dashboard...</div>
     <div class="main-content" style="margin-left: 270px; padding: 20px;">
         <h1>Welcome to the Dashboard</h1>
+
+        <div class="mfa-toggle">
+            <label>
+                <input type="checkbox" id="mfaToggle" />
+                Enable Multi-Factor Authentication (MFA)
+            </label>
+        </div>
+
     </div>
 </body>
 </html>

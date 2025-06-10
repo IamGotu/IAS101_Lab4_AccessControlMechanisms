@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
-import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js";
-import { getFirestore, getDoc, doc } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
+import { getAuth, onAuthStateChanged, signOut, onIdTokenChanged } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js";
+import { getFirestore, getDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
 
 // Firebase configuration
 const firebaseConfig = {
@@ -16,6 +16,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const mfaToggle = document.getElementById('mfaToggle');
 
 onAuthStateChanged(auth, async (user) => {
   if (user) {
@@ -26,42 +27,54 @@ onAuthStateChanged(auth, async (user) => {
     if (docSnap.exists()) {
       const userData = docSnap.data();
 
-      // Update UI
+      // Display user info
       document.getElementById("loggedUserFullName").textContent = `${userData.firstName} ${userData.middleName} ${userData.lastName}`;
       document.getElementById("loggedUserEmail").textContent = user.email;
       document.getElementById("loggedUserRole").textContent = userData.role;
-
-      // Set role in localStorage for role-based UI control
       localStorage.setItem('role', userData.role);
 
-      // Optionally, check Manage Users link visibility here too
       const manageUsersLink = document.querySelector('a[href="../src/manage_users.php"]');
       if (userData.role !== 'Admin' && userData.role !== 'Super Admin') {
         manageUsersLink.style.display = 'none';
       }
 
+      // Set toggle status based on Firestore
+      mfaToggle.checked = userData.mfaEnabled === true;
+
+      // Add toggle event listener
+      mfaToggle.addEventListener('change', async () => {
+        const enabled = mfaToggle.checked;
+        try {
+          await updateDoc(docRef, {
+            mfaEnabled: enabled
+          });
+          alert(`MFA has been ${enabled ? 'enabled' : 'disabled'}.`);
+        } catch (error) {
+          console.error("Error updating MFA setting:", error);
+          alert("Failed to update MFA setting. Try again.");
+          mfaToggle.checked = !enabled; // revert toggle on error
+        }
+      });
+
     } else {
       console.error("No such user document!");
     }
+
   } else {
-  
-    window.location.href = "../src/login_sign_up.php"; // Redirect if not logged in
+    window.location.href = "../src/login_sign_up.php";
   }
 });
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Logout functionality
   const logout = document.getElementById('logout');
-
   if (logout) {
     logout.addEventListener('click', (event) => {
-      event.preventDefault(); // Prevent default link behavior
+      event.preventDefault();
       console.log('Logout button clicked');
-  
       signOut(auth)
         .then(() => {
-          clearToken(); // Clear the token
-          window.location.href = 'login_sign_up.php?nocache=' + new Date().getTime(); // Redirect to login page
+          clearToken();
+          window.location.href = 'login_sign_up.php?nocache=' + new Date().getTime();
         })
         .catch((error) => {
           console.error('Error signing out:', error);
@@ -72,51 +85,45 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-// Store the Firebase ID token in localStorage
+// Store and clear ID tokens
 const storeToken = (idToken) => {
   localStorage.setItem('idToken', idToken);
 };
 
-
-// Clear the Firebase ID token from localStorage
 const clearToken = () => {
   localStorage.removeItem('idToken');
 };
 
-// Refresh the Firebase ID token before it expires
 onIdTokenChanged(auth, (user) => {
   if (user) {
     user.getIdToken().then((idToken) => {
       console.log('Refreshed ID Token:', idToken);
-      storeToken(idToken); // Store the refreshed token
+      storeToken(idToken);
     });
   } else {
-    clearToken(); // Clear the token if the user is logged out
+    clearToken();
   }
 });
 
+// Inactivity logout
 let inactivityTimer;
 
-// Reset the inactivity timer on user activity
 const resetInactivityTimer = () => {
   clearTimeout(inactivityTimer);
   inactivityTimer = setTimeout(() => {
     console.log('User inactive. Logging out...');
     signOut(auth)
       .then(() => {
-        clearToken(); // Clear the token
-        window.location.href = 'login_sign_up.php'; // Redirect to login page
+        clearToken();
+        window.location.href = 'login_sign_up.php';
       })
       .catch((error) => {
         console.error('Error signing out:', error);
       });
-  }, 30 * 1000); // 30 seconds of inactivity
+  }, 30 * 1000);
 };
 
-// Track user activity
 document.addEventListener('mousemove', resetInactivityTimer);
 document.addEventListener('keypress', resetInactivityTimer);
 document.addEventListener('click', resetInactivityTimer);
-
-// Start the timer when the page loads
 resetInactivityTimer();
