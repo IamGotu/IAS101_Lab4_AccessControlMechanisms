@@ -83,6 +83,17 @@ onAuthStateChanged(auth, async (user) => {
               <option value="User" ${data.role === 'User' ? 'selected' : ''}>User</option>
             </select>
           </label><br>
+
+          ${isSuperAdmin ? `
+            <fieldset>
+              <legend>Permissions:</legend>
+              <label><input type="checkbox" name="canAdd" ${data.permissions?.canAdd ? 'checked' : ''}> Add</label>
+              <label><input type="checkbox" name="canUpdate" ${data.permissions?.canUpdate ? 'checked' : ''}> Update</label>
+              <label><input type="checkbox" name="canDisable" ${data.permissions?.canDisable ? 'checked' : ''}> Disable</label>
+              <label><input type="checkbox" name="canDelete" ${data.permissions?.canDelete ? 'checked' : ''}> Delete</label>
+            </fieldset>
+          ` : ""}
+
           ${isSuperAdmin ? `
             <button type="button" class="disable-btn">Disable</button>
             <button type="button" class="delete-btn">Delete</button>
@@ -96,7 +107,7 @@ onAuthStateChanged(auth, async (user) => {
       const form = userCard.querySelector("form");
 
       if (isSuperAdmin) {
-        // ✅ Disable account
+        // Disable account
         userCard.querySelector(".disable-btn").addEventListener("click", async () => {
           try {
             await updateDoc(doc(db, "users", uid), { disabled: true });
@@ -107,7 +118,7 @@ onAuthStateChanged(auth, async (user) => {
           }
         });
 
-        // ✅ Delete account
+        // Delete account
         userCard.querySelector(".delete-btn").addEventListener("click", async () => {
           if (!confirm("Are you sure you want to delete this user?")) return;
           try {
@@ -121,7 +132,7 @@ onAuthStateChanged(auth, async (user) => {
         });
       }
 
-      // ✅ Update user data
+      // Update user data
       form.addEventListener("submit", async (e) => {
         e.preventDefault();
 
@@ -133,7 +144,15 @@ onAuthStateChanged(auth, async (user) => {
 
         if (isSuperAdmin) {
           updatedData.role = form.role.value;
+          updatedData.permissions = {
+            canAdd: form.canAdd?.checked || false,
+            canUpdate: form.canUpdate?.checked || false,
+            canDisable: form.canDisable?.checked || false,
+            canDelete: form.canDelete?.checked || false
+          };
         }
+
+        const uid = form.getAttribute("data-uid");
 
         try {
           await updateDoc(doc(db, "users", uid), updatedData);
