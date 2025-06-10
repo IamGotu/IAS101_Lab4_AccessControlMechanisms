@@ -20,7 +20,7 @@
                 <option value="">All Types</option>
                 <option value="login">Login</option>
                 <option value="logout">Logout</option>
-                <option value="update">Update</option>
+                <option value="update_user">Update</option>
                 <option value="unauthorized">Unauthorized Access</option>
             </select>
         </div>
