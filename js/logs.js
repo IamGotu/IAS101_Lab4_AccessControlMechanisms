@@ -1,7 +1,8 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
 import { 
     getAuth, 
-    onAuthStateChanged 
+    onAuthStateChanged,
+    signOut
 } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
 import { 
     getFirestore, 
@@ -14,7 +15,7 @@ import {
     getDoc
 } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
 
-// Firebase Config
+// Firebase Configuration
 const firebaseConfig = {
     apiKey: "AIzaSyCozlMcUAW_xd0XOpDQtFjp-SwORZLMRcI",
     authDomain: "web-authentication-39260.firebaseapp.com",
@@ -29,89 +30,133 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// Wait for DOM
+// Wait for DOM to be fully loaded
 document.addEventListener('DOMContentLoaded', () => {
+    // Monitor authentication state
     onAuthStateChanged(auth, async (user) => {
         if (!user || !user.emailVerified) {
             window.location.href = "login_sign_up.php";
             return;
         }
 
-        // Fetch user data
-        const userDoc = await getDoc(doc(db, "users", user.uid));
-        if (userDoc.exists()) {
-            const userData = userDoc.data();
-            document.getElementById("loggedUserFullName").textContent = 
-                `${userData.firstName || ''} ${userData.middleName || ''} ${userData.lastName || ''}`.trim();
-            document.getElementById("loggedUserEmail").textContent = user.email;
-            document.getElementById("loggedUserRole").textContent = userData.role || "N/A";
+        // Fetch and display user data
+        try {
+            const userDoc = await getDoc(doc(db, "users", user.uid));
+            if (userDoc.exists()) {
+                const userData = userDoc.data();
+                document.getElementById("loggedUserFullName").textContent = 
+                    `${userData.firstName || ''} ${userData.middleName || ''} ${userData.lastName || ''}`.trim();
+                document.getElementById("loggedUserEmail").textContent = user.email;
+                document.getElementById("loggedUserRole").textContent = userData.role || "N/A";
+            }
+        } catch (error) {
+            console.error("Error loading user data:", error);
         }
 
         // Load logs
         loadLogs();
     });
 
-    // Logs functions
+    // Get DOM elements
     const logsContainer = document.getElementById('logsContainer');
     const filterType = document.getElementById('filterType');
     const searchUser = document.getElementById('searchUser');
+   
+    const logout = document.getElementById('logout');
+    if (logout) {
+        console.log('Logout button found');
+        logout.addEventListener('click', (event) => {
+            event.preventDefault();
+            console.log('Logout button clicked');
 
-    async function loadLogs() {
-        logsContainer.innerHTML = 'Loading...';
-        const q = query(
-            collection(db, "logs"),
-            orderBy("timestamp", "desc"),
-            limit(100)
-        );
-        const snapshot = await getDocs(q);
-        logsContainer.innerHTML = '';
-        snapshot.forEach((doc) => {
-            const data = doc.data();
-            const logDiv = document.createElement('div');
-            logDiv.className = 'log-entry';
-            logDiv.innerHTML = `
-                <div class="log-header">${data.action?.toUpperCase() || 'UNKNOWN'}</div>
-                <div class="log-meta">${data.timestamp?.toDate().toLocaleString() || 'No timestamp'}</div>
-                <div class="log-action">User: <strong>${data.user_email || 'N/A'}</strong></div>
-                <div class="log-status ${data.status?.toLowerCase() || ''}">Status: ${data.status || 'UNKNOWN'}</div>
-                <div class="log-action">${data.details || ''}</div>
-            `;
-            logsContainer.appendChild(logDiv);
+            signOut(auth)
+                .then(() => {
+                    window.location.href = 'login_sign_up.php?nocache=' + new Date().getTime();
+                })
+                .catch((error) => {
+                    console.error('Error signing out:', error);
+                });
         });
+    } else {
+        console.warn('Logout button not found in DOM');
     }
 
-    // Filter functions
-    filterType.addEventListener('change', applyFilters);
-    searchUser.addEventListener('input', applyFilters);
-
-    async function applyFilters() {
-        const type = filterType.value.trim();
-        const userSearch = searchUser.value.toLowerCase().trim();
-
-        logsContainer.innerHTML = 'Filtering...';
-        const q = query(
-            collection(db, "logs"),
-            orderBy("timestamp", "desc"),
-            limit(100)
-        );
-        const snapshot = await getDocs(q);
-        logsContainer.innerHTML = '';
-        snapshot.forEach((doc) => {
-            const data = doc.data();
-            const matchType = !type || data.action === type;
-            const matchUser = !userSearch || (data.user_email && data.user_email.toLowerCase().includes(userSearch));
-            if (matchType && matchUser) {
+    // Load and display logs
+    async function loadLogs() {
+        try {
+            logsContainer.innerHTML = '<div class="loading">Loading logs...</div>';
+            const q = query(
+                collection(db, "logs"),
+                orderBy("timestamp", "desc"),
+                limit(100)
+            );
+            const snapshot = await getDocs(q);
+            
+            logsContainer.innerHTML = '';
+            snapshot.forEach((doc) => {
+                const data = doc.data();
                 const logDiv = document.createElement('div');
                 logDiv.className = 'log-entry';
                 logDiv.innerHTML = `
                     <div class="log-header">${data.action?.toUpperCase() || 'UNKNOWN'}</div>
                     <div class="log-meta">${data.timestamp?.toDate().toLocaleString() || 'No timestamp'}</div>
-                    <div class="log-action">User: <strong>${data.user_email || 'N/A'}</strong></div>
+                    <div class="log-user">User: <strong>${data.user_email || 'N/A'}</strong></div>
                     <div class="log-status ${data.status?.toLowerCase() || ''}">Status: ${data.status || 'UNKNOWN'}</div>
-                    <div class="log-action">${data.details || ''}</div>
+                    <div class="log-details">${data.details || ''}</div>
                 `;
                 logsContainer.appendChild(logDiv);
-            }
-        });
+            });
+        } catch (error) {
+            logsContainer.innerHTML = '<div class="error">Failed to load logs. Please try again.</div>';
+            console.error("Error loading logs:", error);
+        }
     }
+
+    // Filter logs
+    async function applyFilters() {
+        try {
+            const type = filterType.value.trim();
+            const userSearch = searchUser.value.toLowerCase().trim();
+            
+            logsContainer.innerHTML = '<div class="loading">Applying filters...</div>';
+            const q = query(
+                collection(db, "logs"),
+                orderBy("timestamp", "desc"),
+                limit(100)
+            );
+            const snapshot = await getDocs(q);
+            
+            logsContainer.innerHTML = '';
+            snapshot.forEach((doc) => {
+                const data = doc.data();
+                const matchesType = !type || data.action === type;
+                const matchesUser = !userSearch || 
+                    (data.user_email && data.user_email.toLowerCase().includes(userSearch));
+                
+                if (matchesType && matchesUser) {
+                    const logDiv = document.createElement('div');
+                    logDiv.className = 'log-entry';
+                    logDiv.innerHTML = `
+                        <div class="log-header">${data.action?.toUpperCase() || 'UNKNOWN'}</div>
+                        <div class="log-meta">${data.timestamp?.toDate().toLocaleString() || 'No timestamp'}</div>
+                        <div class="log-user">User: <strong>${data.user_email || 'N/A'}</strong></div>
+                        <div class="log-status ${data.status?.toLowerCase() || ''}">Status: ${data.status || 'UNKNOWN'}</div>
+                        <div class="log-details">${data.details || ''}</div>
+                    `;
+                    logsContainer.appendChild(logDiv);
+                }
+            });
+            
+            if (logsContainer.children.length === 0) {
+                logsContainer.innerHTML = '<div class="no-results">No matching logs found</div>';
+            }
+        } catch (error) {
+            logsContainer.innerHTML = '<div class="error">Failed to apply filters. Please try again.</div>';
+            console.error("Error filtering logs:", error);
+        }
+    }
+
+    // Event listeners for filters
+    filterType.addEventListener('change', applyFilters);
+    searchUser.addEventListener('input', applyFilters);
 });

@@ -1,6 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
 import {
-  getFirestore, collection, getDocs, doc, getDoc, updateDoc, deleteDoc
+  getFirestore, collection, getDocs, doc, getDoc,
+  updateDoc, deleteDoc, addDoc
 } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
 
 import {
@@ -130,8 +131,10 @@ onAuthStateChanged(auth, async (user) => {
       if (canDisable) {
         userCard.querySelector(".disable-btn").addEventListener("click", async () => {
           try {
-            await updateDoc(doc(db, "users", uid), { disabled: true });
-            alert("User disabled.");
+           await updateDoc(doc(db, "users", uid), { disabled: true });
+           await logAction(user.email, "disable_user", "User disabled.", `Disabled user: ${data.email}`);
+           alert("User disabled.");
+
           } catch (err) {
             console.error("Disable failed:", err);
             alert("Error disabling user.");
@@ -144,6 +147,7 @@ onAuthStateChanged(auth, async (user) => {
           if (!confirm("Are you sure you want to delete this user?")) return;
           try {
             await deleteDoc(doc(db, "users", uid));
+            await logAction(user.email, "delete_user", "User deleted.", `Deleted user: ${data.email}`);
             alert("User deleted.");
             window.location.reload();
           } catch (err) {
@@ -172,6 +176,7 @@ onAuthStateChanged(auth, async (user) => {
 
           try {
             await updateDoc(doc(db, "users", uid), updatedData);
+            await logAction(user.email, "update_user", "User updated successfully!", `Updated user: ${form.firstName.value} ${form.lastName.value}`);
             alert("User updated successfully!");
           } catch (err) {
             console.error("Error updating user:", err);
@@ -181,30 +186,139 @@ onAuthStateChanged(auth, async (user) => {
       }
     });
   }
+
+  async function logAction(userEmail, action, status, details) {
+    try {
+      await addDoc(collection(db, "logs"), {
+        timestamp: new Date(),
+        action: action,
+        user_email: userEmail,
+        status: status,
+        details: details
+      });
+      console.log("Action logged:", action);
+    } catch (error) {
+      console.error("Error logging action:", error);
+    }
+  }
 });
 
-// DOM ready
-document.addEventListener('DOMContentLoaded', () => {
-  const addUserBtn = document.getElementById('addUserBtn');
-  if (addUserBtn) {
-    addUserBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      window.location.href = 'add_user.php';
-    });
-  }
+// Firebase initialization should already be done before this script
 
-  const logout = document.getElementById('logout');
-  if (logout) {
-    logout.addEventListener('click', (event) => {
-      event.preventDefault();
-      signOut(auth)
+document.addEventListener('DOMContentLoaded', function () {
+    const db = firebase.firestore();
+    const usersTable = document.getElementById('usersTable').getElementsByTagName('tbody')[0];
+
+    // Get current signed-in user
+    function getCurrentUser() {
+        return firebase.auth().currentUser;
+    }
+
+    // Log administrative actions to Firestore 'logs' collection
+    function logAction(userEmail, action, status, details) {
+        db.collection('logs').add({
+           timestamp: new Date(),
+           action: action,
+           user_email: userEmail,
+           status: status,
+           details: details
+        })
         .then(() => {
-          clearToken(); // Optional: define clearToken() if using localStorage/session
-          window.location.href = 'login_sign_up.php?nocache=' + new Date().getTime();
+            console.log('Action logged:', action);
         })
         .catch((error) => {
-          console.error('Error signing out:', error);
+            console.error('Error logging action:', error);
+        });
+    }
+
+    // Fetch and display users
+    db.collection('users').get().then((querySnapshot) => {
+        querySnapshot.forEach((doc) => {
+            const user = doc.data();
+            const row = usersTable.insertRow();
+
+            row.insertCell(0).innerText = user.firstName || '';
+            row.insertCell(1).innerText = user.middleName || '';
+            row.insertCell(2).innerText = user.lastName || '';
+            row.insertCell(3).innerText = user.email || '';
+            row.insertCell(4).innerText = user.role || '';
+
+            // Action Buttons
+            const actionsCell = row.insertCell(5);
+
+            // Disable Button
+            const disableBtn = document.createElement('button');
+            disableBtn.innerText = 'Disable';
+            disableBtn.classList.add('btn', 'btn-warning', 'm-1');
+            disableBtn.addEventListener('click', () => {
+                const currentUser = getCurrentUser();
+                if (!currentUser) {
+                    alert('You must be signed in to perform this action.');
+                    return;
+                }
+
+                db.collection('users').doc(doc.id).update({ disabled: true })
+                    .then(() => {
+                        alert('User disabled successfully');
+                        logAction(currentUser.email, 'disable_user', doc.id, `Disabled user: ${user.email}`);
+                        location.reload();
+                    })
+                    .catch((error) => {
+                        alert('Error disabling user: ' + error.message);
+                    });
+            });
+            actionsCell.appendChild(disableBtn);
+
+            // Delete Button
+            const deleteBtn = document.createElement('button');
+            deleteBtn.innerText = 'Delete';
+            deleteBtn.classList.add('btn', 'btn-danger', 'm-1');
+            deleteBtn.addEventListener('click', () => {
+                const currentUser = getCurrentUser();
+                if (!currentUser) {
+                    alert('You must be signed in to perform this action.');
+                    return;
+                }
+
+                if (confirm('Are you sure you want to delete this user?')) {
+                    db.collection('users').doc(doc.id).delete()
+                        .then(() => {
+                            alert('User deleted successfully');
+                            logAction(currentUser.email, 'delete_user', doc.id, `Deleted user: ${user.email}`);
+                            location.reload();
+                        })
+                        .catch((error) => {
+                            alert('Error deleting user: ' + error.message);
+                        });
+                }
+            });
+            actionsCell.appendChild(deleteBtn);
+
+            // Update Role Button (as example for update)
+            const updateBtn = document.createElement('button');
+            updateBtn.innerText = 'Update Role';
+            updateBtn.classList.add('btn', 'btn-info', 'm-1');
+            updateBtn.addEventListener('click', () => {
+                const currentUser = getCurrentUser();
+                if (!currentUser) {
+                    alert('You must be signed in to perform this action.');
+                    return;
+                }
+
+                const newRole = prompt('Enter new role:', user.role);
+                if (newRole && newRole !== user.role) {
+                    db.collection('users').doc(doc.id).update({ role: newRole })
+                        .then(() => {
+                            alert('User role updated successfully');
+                            logAction(currentUser.email, 'update_user', doc.id, `Updated role of user ${user.email} to ${newRole}`);
+                            location.reload();
+                        })
+                        .catch((error) => {
+                            alert('Error updating role: ' + error.message);
+                        });
+                }
+            });
+            actionsCell.appendChild(updateBtn);
         });
     });
-  }
 });
