@@ -50,43 +50,52 @@ signup.addEventListener('click', (event) => {
   const middleName = document.getElementById('middle_name').value;
   const lastName = document.getElementById('last_name').value;
 
-  createUserWithEmailAndPassword(auth, email, password)
-    .then((userCredential) => {
-      // Signed up 
-      const user = userCredential.user;
-      const userData = {
-        email: email,
-        firstName: firstName,
-        middleName: middleName,
-        lastName: lastName,
-        role: 'User'
-      };
-      showMessage('User signed up successfully', 'signUpMessage');
+createUserWithEmailAndPassword(auth, email, password)
+  .then((userCredential) => {
+    const user = userCredential.user;
 
-      // Send verification email
-      sendEmailVerification(user)
-        .then(() => {
-          showMessage('Verification email sent. Please check your email.', 'signUpMessage');
-        });
-
-      const docRef = doc(db, "users", user.uid);
-      setDoc(docRef, userData)
-        .then(() => {
-          window.location.href = 'login_sign_up.php';
-        })
-        .catch((error) => {
-          console.error('Error saving user data: ', error);
-        });
-    })
-    .catch((error) => {
-      const errorCode = error.code;
-      if (errorCode == 'auth/email-already-in-use') {
-        showMessage('Email already exists!!!', 'signUpMessage');
-        return;
-      } else {
-        showMessage('Error signing up user', 'signUpMessage');
+    // Updated user data structure
+    const userData = {
+      role: 'User',
+      firstName: firstName,
+      middleName: middleName,
+      lastName: lastName,
+      email: email,
+      disabled: false,
+      permissions: {
+        canAddUser: true,
+        canDeleteUser: false,
+        canDisableUser: false,
+        canUpdateUser: true
       }
-    });
+    };
+
+    showMessage('User signed up successfully', 'signUpMessage');
+
+    // Send verification email
+    sendEmailVerification(user)
+      .then(() => {
+        showMessage('Verification email sent. Please check your email.', 'signUpMessage');
+      });
+
+    // Store user data in Firestore
+    const docRef = doc(db, "users", user.uid);
+    setDoc(docRef, userData)
+      .then(() => {
+        window.location.href = 'login_sign_up.php';
+      })
+      .catch((error) => {
+        console.error('Error saving user data: ', error);
+      });
+  })
+  .catch((error) => {
+    const errorCode = error.code;
+    if (errorCode === 'auth/email-already-in-use') {
+      showMessage('Email already exists!!!', 'signUpMessage');
+    } else {
+      showMessage('Error signing up user', 'signUpMessage');
+    }
+  });
 });
 
 // Login with Email and Password
@@ -171,4 +180,4 @@ googleLoginButton.addEventListener('click', (event) => {
       const errorMessage = error.message;
       showMessage(`Error during Google Sign-In: ${errorMessage}`, 'loginMessage');
     });
-});N
+});
