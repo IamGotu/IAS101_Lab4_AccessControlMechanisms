@@ -38,6 +38,11 @@ onAuthStateChanged(auth, async (user) => {
         manageUsersLink.style.display = 'none';
       }
 
+      const logsLink = document.querySelector('a[href="../src/logs.php"]');
+      if (userData.role !== 'Admin' && userData.role !== 'Super Admin') {
+        logsLink.style.display = 'none';
+      }
+
       // Set toggle status based on Firestore
       mfaToggle.checked = userData.mfaEnabled === true;
 

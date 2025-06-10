@@ -1,0 +1,105 @@
+body {
+  margin: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(to right, #e2e2e2, #c9d6ff);
+  display: flex;
+  min-height: 100vh;
+}
+
+.main-content {
+  margin-left: 240px;
+  padding: 2rem;
+  width: calc(100% - 240px);
+  box-sizing: border-box;
+}
+
+h1 {
+  text-align: center;
+  font-size: 2rem;
+  color: #2c3e50;
+  margin-bottom: 2rem;
+}
+
+.log-entry {
+  background-color: #ffffff;
+  border: 1px solid #dfe6e9;
+  border-left: 6px solid #2980b9;
+  margin-bottom: 1.5rem;
+  padding: 1.2rem 1.5rem;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.log-entry .log-header {
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 0.5rem;
+}
+
+.log-entry .log-meta {
+  font-size: 0.9rem;
+  color: #636e72;
+  margin-bottom: 0.5rem;
+}
+
+.log-entry .log-action {
+  font-size: 1rem;
+  color: #2d3436;
+}
+
+.log-entry .log-status.success {
+  color: #27ae60;
+  font-weight: 600;
+}
+
+.log-entry .log-status.failed {
+  color: #c0392b;
+  font-weight: 600;
+}
+
+.log-entry .log-status.unauthorized {
+  color: #d35400;
+  font-weight: 600;
+}
+
+/* Filters, if applicable */
+.filter-bar {
+  margin-bottom: 2rem;
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.filter-bar select,
+.filter-bar input[type="text"] {
+  padding: 0.6rem 0.75rem;
+  font-size: 1rem;
+  border: 1px solid #b2bec3;
+  border-radius: 6px;
+  transition: border 0.3s ease;
+}
+
+.filter-bar select:focus,
+.filter-bar input[type="text"]:focus {
+  border-color: #2980b9;
+  outline: none;
+  box-shadow: 0 0 5px rgba(41, 128, 185, 0.3);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .main-content {
+    margin-left: 0;
+    width: 100%;
+    padding: 1.5rem;
+  }
+
+  .log-entry {
+    padding: 1rem 1.25rem;
+  }
+
+  .filter-bar {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+}
