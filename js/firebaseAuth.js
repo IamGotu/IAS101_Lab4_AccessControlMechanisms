@@ -171,4 +171,4 @@ googleLoginButton.addEventListener('click', (event) => {
       const errorMessage = error.message;
       showMessage(`Error during Google Sign-In: ${errorMessage}`, 'loginMessage');
     });
-});
+});N

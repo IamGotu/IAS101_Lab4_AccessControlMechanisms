@@ -44,6 +44,7 @@ onAuthStateChanged(auth, async (user) => {
       console.error("No such user document!");
     }
   } else {
+  
     window.location.href = "../src/login_sign_up.php"; // Redirect if not logged in
   }
 });
