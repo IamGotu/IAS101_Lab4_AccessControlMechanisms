@@ -30,12 +30,31 @@ onAuthStateChanged(auth, async (user) => {
   }
 
   // Load current user's profile into sidebar
+  let currentUserPermissions = {
+    canAdd: false,
+    canUpdate: false,
+    canDelete: false,
+    canDisable: false
+  };
   let currentUserRole = "";
+
   try {
     const userDoc = await getDoc(doc(db, "users", user.uid));
     if (userDoc.exists()) {
       const data = userDoc.data();
       currentUserRole = data.role;
+
+      currentUserPermissions = {
+        canAdd: data.permissions?.canAdd === true,
+        canUpdate: data.permissions?.canUpdate === true,
+        canDelete: data.permissions?.canDelete === true,
+        canDisable: data.permissions?.canDisable === true
+      };
+
+      const addUserBtn = document.getElementById('addUserBtn');
+      if (addUserBtn) {
+        addUserBtn.style.display = currentUserPermissions.canAdd ? 'inline-block' : 'none';
+      }
 
       if (currentUserRole !== "Admin" && currentUserRole !== "Super Admin") {
         alert("Access denied. You do not have permission to access this page.");
@@ -69,36 +88,38 @@ onAuthStateChanged(auth, async (user) => {
       userCard.classList.add("user-card");
 
       const isSuperAdmin = currentUserRole === "Super Admin";
+      const canUpdate = currentUserPermissions.canUpdate;
+      const canDelete = currentUserPermissions.canDelete;
+      const canDisable = currentUserPermissions.canDisable;
+
 
       userCard.innerHTML = `
         <form data-uid="${uid}">
-          <label>First Name: <input type="text" name="firstName" value="${data.firstName}" /></label><br>
-          <label>Middle Name: <input type="text" name="middleName" value="${data.middleName}" /></label><br>
-          <label>Last Name: <input type="text" name="lastName" value="${data.lastName}" /></label><br>
+          <label>First Name: <input type="text" name="firstName" value="${data.firstName}" ${!canUpdate ? 'disabled' : ''} /></label><br>
+          <label>Middle Name: <input type="text" name="middleName" value="${data.middleName}" ${!canUpdate ? 'disabled' : ''} /></label><br>
+          <label>Last Name: <input type="text" name="lastName" value="${data.lastName}" ${!canUpdate ? 'disabled' : ''} /></label><br>
           <label>Email: <input type="email" value="${data.email}" disabled /></label><br>
           <label>Role:
-            <select name="role" ${!isSuperAdmin ? "disabled" : ""}>
+            <select name="role" ${!canUpdate ? "disabled" : ""}>
               <option value="Super Admin" ${data.role === 'Super Admin' ? 'selected' : ''}>Super Admin</option>
               <option value="Admin" ${data.role === 'Admin' ? 'selected' : ''}>Admin</option>
               <option value="User" ${data.role === 'User' ? 'selected' : ''}>User</option>
             </select>
           </label><br>
 
-          ${isSuperAdmin ? `
+          ${data.permissions ? `
             <fieldset>
               <legend>Permissions:</legend>
-              <label><input type="checkbox" name="canAdd" ${data.permissions?.canAdd ? 'checked' : ''}> Add</label>
-              <label><input type="checkbox" name="canUpdate" ${data.permissions?.canUpdate ? 'checked' : ''}> Update</label>
-              <label><input type="checkbox" name="canDisable" ${data.permissions?.canDisable ? 'checked' : ''}> Disable</label>
-              <label><input type="checkbox" name="canDelete" ${data.permissions?.canDelete ? 'checked' : ''}> Delete</label>
+              <label><input type="checkbox" name="canAdd" ${data.permissions.canAdd ? 'checked' : ''}> Add</label>
+              <label><input type="checkbox" name="canUpdate" ${data.permissions.canUpdate ? 'checked' : ''}> Update</label>
+              <label><input type="checkbox" name="canDisable" ${data.permissions.canDisable ? 'checked' : ''}> Disable</label>
+              <label><input type="checkbox" name="canDelete" ${data.permissions.canDelete ? 'checked' : ''}> Delete</label>
             </fieldset>
-          ` : ""}
+          ` : ''}
 
-          ${isSuperAdmin ? `
-            <button type="button" class="disable-btn">Disable</button>
-            <button type="button" class="delete-btn">Delete</button>
-          ` : ""}
-          <button type="submit">Update</button>
+          ${canDisable ? `<button type="button" class="disable-btn">Disable</button>` : ""}
+          ${canDelete ? `<button type="button" class="delete-btn">Delete</button>` : ""}
+          ${canUpdate ? `<button type="submit">Update</button>` : ""}
         </form>
         <hr>
       `;
@@ -106,8 +127,7 @@ onAuthStateChanged(auth, async (user) => {
 
       const form = userCard.querySelector("form");
 
-      if (isSuperAdmin) {
-        // Disable account
+      if (canDisable) {
         userCard.querySelector(".disable-btn").addEventListener("click", async () => {
           try {
             await updateDoc(doc(db, "users", uid), { disabled: true });
@@ -117,8 +137,9 @@ onAuthStateChanged(auth, async (user) => {
             alert("Error disabling user.");
           }
         });
+      }
 
-        // Delete account
+      if (canDelete) {
         userCard.querySelector(".delete-btn").addEventListener("click", async () => {
           if (!confirm("Are you sure you want to delete this user?")) return;
           try {
@@ -133,35 +154,31 @@ onAuthStateChanged(auth, async (user) => {
       }
 
       // Update user data
-      form.addEventListener("submit", async (e) => {
-        e.preventDefault();
-
-        const updatedData = {
-          firstName: form.firstName.value,
-          middleName: form.middleName.value,
-          lastName: form.lastName.value
-        };
-
-        if (isSuperAdmin) {
-          updatedData.role = form.role.value;
-          updatedData.permissions = {
-            canAdd: form.canAdd?.checked || false,
-            canUpdate: form.canUpdate?.checked || false,
-            canDisable: form.canDisable?.checked || false,
-            canDelete: form.canDelete?.checked || false
+      if (canUpdate) {
+        form.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const updatedData = {
+            firstName: form.firstName.value,
+            middleName: form.middleName.value,
+            lastName: form.lastName.value,
+            role: form.role.value,
+            permissions: {
+              canAdd: form.canAdd?.checked || false,
+              canUpdate: form.canUpdate?.checked || false,
+              canDisable: form.canDisable?.checked || false,
+              canDelete: form.canDelete?.checked || false
+            }
           };
-        }
 
-        const uid = form.getAttribute("data-uid");
-
-        try {
-          await updateDoc(doc(db, "users", uid), updatedData);
-          alert("User updated successfully!");
-        } catch (err) {
-          console.error("Error updating user:", err);
-          alert("Failed to update user.");
-        }
-      });
+          try {
+            await updateDoc(doc(db, "users", uid), updatedData);
+            alert("User updated successfully!");
+          } catch (err) {
+            console.error("Error updating user:", err);
+            alert("Failed to update user.");
+          }
+        });
+      }
     });
   }
 });
