@@ -63,10 +63,10 @@ createUserWithEmailAndPassword(auth, email, password)
       email: email,
       disabled: false,
       permissions: {
-        canAddUser: true,
+        canAddUser: false,
         canDeleteUser: false,
         canDisableUser: false,
-        canUpdateUser: true
+        canUpdateUser: false
       }
     };
 
