@@ -12,7 +12,8 @@ import {
     limit, 
     getDocs,
     doc,
-    getDoc
+    getDoc,
+    addDoc
 } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
 
 // Firebase Configuration
@@ -140,13 +141,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const snapshot = await getDocs(q);
             
             logsContainer.innerHTML = '';
+            let hasMatches = false;
+            
             snapshot.forEach((doc) => {
                 const data = doc.data();
-                const matchesType = !type || data.action === type;
-                const matchesUser = !userSearch || 
+                const actionMatch = !type || data.action === type;
+                const userMatch = !userSearch || 
                     (data.user_email && data.user_email.toLowerCase().includes(userSearch));
                 
-                if (matchesType && matchesUser) {
+                if (actionMatch && userMatch) {
+                    hasMatches = true;
                     const logDiv = document.createElement('div');
                     logDiv.className = 'log-entry';
                     logDiv.innerHTML = `
@@ -160,7 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
             
-            if (logsContainer.children.length === 0) {
+            if (!hasMatches) {
                 logsContainer.innerHTML = '<div class="no-results">No matching logs found</div>';
             }
         } catch (error) {
@@ -168,12 +172,12 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error("Error filtering logs:", error);
         }
     }
-
+    
     async function logAction(userEmail, action, status, details) {
         try {
             await addDoc(collection(db, "logs"), {
                 timestamp: new Date(),
-                action: action,
+                action: "access_denied", // Make sure this is exactly "access_denied"
                 user_email: userEmail,
                 status: status,
                 details: details
