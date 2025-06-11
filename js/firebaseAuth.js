@@ -144,19 +144,45 @@ document.getElementById('google')?.addEventListener('click', async (e) => {
     const result = await signInWithPopup(auth, googleProvider);
     const user = result.user;
 
+    // Enforce domain restriction
+    const allowedDomain = 'gmail.com';
+    const email = user.email || '';
+    const emailDomain = email.split('@')[1];
+
+    if (emailDomain !== allowedDomain) {
+      showMessage(`Google Sign-In is restricted to @${allowedDomain} accounts.`, 'loginMessage');
+      await signOut(auth);
+      return;
+    }
+
     const displayName = user.displayName || '';
     const nameParts = displayName.split(' ');
     const firstName = nameParts.slice(0, -1).join(' ') || 'N/A';
     const lastName = nameParts.at(-1) || 'N/A';
 
-    const userData = {
-      email: user.email || 'N/A',
-      firstName,
-      middleName: 'N/A',
-      lastName
-    };
+    // Check if user already exists in Firestore
+    const userDocRef = doc(db, "users", user.uid);
+    const userDoc = await getDoc(userDocRef);
 
-    await setDoc(doc(db, "users", user.uid), userData);
+    if (!userDoc.exists()) {
+      const userData = {
+        email,
+        firstName,
+        middleName: 'N/A',
+        lastName,
+        role: 'User',
+        mfaEnabled: false,
+        disabled: false,
+        permissions: {
+          canAdd: false,
+          canDelete: false,
+          canDisable: false,
+          canUpdate: false
+        }
+      };
+      await setDoc(userDocRef, userData);
+    }
+
     window.location.href = 'dashboard.php';
 
   } catch (error) {
