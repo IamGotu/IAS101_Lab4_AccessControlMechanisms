@@ -85,9 +85,14 @@ onAuthStateChanged(auth, async (user) => {
       }
 
       if (currentUserRole !== "Admin" && currentUserRole !== "Super Admin") {
-        alert("Access denied. You do not have permission to access this page.");
-        window.location.href = "dashboard.php";
-        return;
+          // Get the current user's email for logging
+          const userEmail = user ? user.email : "unknown";
+          // Log the access denied attempt
+          await logAction(userEmail, "access_denied", "Unauthorized access attempt", 
+              `User with role ${currentUserRole} attempted to access admin page`);
+          alert("Access denied. You do not have permission to access this page.");
+          window.location.href = "dashboard.php";
+          return;
       }
 
       document.getElementById("loggedUserFullName").textContent = `${data.firstName} ${data.middleName} ${data.lastName}`;

@@ -39,22 +39,35 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Fetch and display user data
+        // Check user role before proceeding
         try {
             const userDoc = await getDoc(doc(db, "users", user.uid));
             if (userDoc.exists()) {
                 const userData = userDoc.data();
+                const currentUserRole = userData.role || "User";
+
+                // Add access control check here
+                if (currentUserRole !== "Admin" && currentUserRole !== "Super Admin") {
+                    await logAction(user.email, "access_denied", "Unauthorized access attempt", 
+                        `User with role ${currentUserRole} attempted to access logs page`);
+                    alert("Access denied. You do not have permission to access this page.");
+                    window.location.href = "dashboard.php";
+                    return;
+                }
+
+                // Continue with the rest of the code if access is granted
                 document.getElementById("loggedUserFullName").textContent = 
                     `${userData.firstName || ''} ${userData.middleName || ''} ${userData.lastName || ''}`.trim();
                 document.getElementById("loggedUserEmail").textContent = user.email;
                 document.getElementById("loggedUserRole").textContent = userData.role || "N/A";
+                
+                // Load logs
+                loadLogs();
             }
         } catch (error) {
             console.error("Error loading user data:", error);
+            window.location.href = "dashboard.php";
         }
-
-        // Load logs
-        loadLogs();
     });
 
     // Get DOM elements
@@ -153,6 +166,21 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             logsContainer.innerHTML = '<div class="error">Failed to apply filters. Please try again.</div>';
             console.error("Error filtering logs:", error);
+        }
+    }
+
+    async function logAction(userEmail, action, status, details) {
+        try {
+            await addDoc(collection(db, "logs"), {
+                timestamp: new Date(),
+                action: action,
+                user_email: userEmail,
+                status: status,
+                details: details
+            });
+            console.log("Action logged:", action);
+        } catch (error) {
+            console.error("Error logging action:", error);
         }
     }
 
